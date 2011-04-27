@@ -1,0 +1,108 @@
+<html>
+<head> 
+<script src="http://motoki.local/socket-io/socket.io.js"></script> 
+<script src="http://motoki.local/socket-io/json2.js"></script> 
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script> 
+<script>
+  //{{{ messageBoad
+  Message = function(id){
+    var data = [];
+    return {
+      add    : function (msg) {data.push(msg)},
+      length : function (msg) {return data.length}}
+  };
+  //{{{ messageBoad
+  MessageBoad = function(id){
+    var datas  = [],
+        _id    = id,
+        formatData = function (data) {return "["+data.createdAt + "] : " + data.data};
+    return {
+        add    : function (msg) {datas.push(msg);
+                                    $('<div></div>').text(formatData(msg)).css('color', msg.option.color).appendTo(_id); },
+
+                                  length : function () {return datas.length;}
+    }
+  };
+  //}}}
+  //{{{displayStatus
+  DisplayStatus = function(id){
+    var _id = id;
+    return {
+      connect    : function () {$(_id).text('connecting..').css('color','blue')},
+      disconnect : function () {$(_id).text('disconnected').css('color','red')},
+      setId      : function (id) {_id = id}}
+  };
+  //}}}
+
+  var socket      = new io.Socket('motoki.local',{port:8000}), 
+      dispStatus  = new DisplayStatus('div.#connect_status'),
+      msgBoad     = new MessageBoad('div.#message_boad'),
+      messageType = {'GET_DATA' : 0, 'STRING' : 1};
+
+  socket.connect();
+  socket.on('connect',    onConnect);
+  socket.on('disconnect', onDisconnect);
+  socket.on('message',    onMessage);
+
+  $(function(){
+    $('input#send_button').bind('click', sendMessage);;
+    $('input#switch_socket_button').bind('click', switchSocketConnect);;
+  });
+  //{{{sendMessage
+  function sendMessage()
+  {
+    var msg  = {"type"   : messageType.STRING,
+                "option" : {"color" : ""},
+                "data"   : $('input#send_body').val()};
+      try{
+          socket.send(msg);
+      } catch(e) {
+          alert('socket.send() error : ' + e);
+      }
+  }
+  //}}}
+  function onConnect()
+  {
+      log('onConnect');
+      var msg = {"type"    : messageType.GET_DATA,
+                 "more_id" : msgBoad.length()};
+      socket.send(msg);
+      dispStatus.connect();
+  }
+  function onDisconnect()
+  {
+      log('onDisconnect');
+      dispStatus.disconnect();
+  }
+  function onMessage(msg)
+  {
+      msgBoad.add(msg);
+  }
+  function switchSocketConnect(msg)
+  {
+    if (socket.connected) {
+      socket.disconnect();
+    } else {
+      socket.connect();
+    }
+  }
+  //{{{log
+  function log(msg)
+  {
+      if (typeof console == 'object') {
+            console.log(msg);
+      }
+  }
+  //}}}
+</script>
+</head>
+<body>
+  <div id='connect_status'>choge</div>
+    message : <input id='send_body' value='' type="text"/>
+    <input type="button" id='send_button' value='送信'/>
+    <div><input type="button" id='switch_socket_button' value='ソケットON/Off'/></div>
+    <hr/>
+    <div id='message_boad'></div>
+    <hr/>
+</body>
+</html>
