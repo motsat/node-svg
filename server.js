@@ -5,13 +5,16 @@ var io            = require('socket.io'),
 
 
 var app = express.createServer();
-app.set("view options", { layout: false });
-app.set("views", __dirname + '/public');
-app.get('/', function(req, res) {
+app.configure(function(){
+  app.set('views', __dirname + '/views');
+  app.use(express.static(__dirname + '/public'));
+  app.set("view options", { layout: false });
+  app.get('/', function(req, res) {
     res.render('index.ejs');
+    });
 });
-app.listen(8000);
 
+app.listen(8000);
 
 var socket = io.listen(app);
 socket.on('connection', function(client){
