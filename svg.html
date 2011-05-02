@@ -8,105 +8,15 @@
 
         <script type="text/javascript">
             function drawImage() {
-                var root = document.getElementById('image_base');
-                card = Raphael(root, 150, 200);
+                var canvas = document.getElementById('image_base');
+                card = Raphael(canvas, 150, 200);
 
                 var rect = card.rect(0, 0, 150, 200); // 枠線の描画
                 rect.attr("fill",         "none");  // 塗りつぶし
                 rect.attr("stroke",       "black");
                 rect.attr("stroke-width", "5");
 
-                // ダイヤの描画
-                //var dyer = card.path("M50 10 L10 60 L50 110 L90 60");
-                //dyer.attr("fill",   "red");
-                //dyer.attr("stroke", "none");
-
-                var number = card.text(135, 150, "A");
-                number.attr("font-size", "90");
-                number.attr("text-anchor", "end");
-
-                // $(rect).drag(
-                //         function(dx, dy){// move
-                //         this.attr({
-                //             "cx" : this.ox + dx,
-                //             "cy" : this.oy + dy
-                //             });
-                //         },
-                //         function(){// start
-                //         this.ox = this.attr("cx");
-                //         this.oy = this.attr("cy");
-                //         this.attr({"opacity" : 0.5});
-
-                //         },
-                //         function(){// end
-                //            this.attr({"opacity" : 1});
-
-                //         }
-
-                //         );
-            alert(2)
             }
-            function drawImage2(){
-
-                console.log('start');
-                // svg
-                svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                if (!svg){
-                    alert('svgDOMの生成に失敗しました');
-                }
-                svg.setAttribute("width",  '600');
-                svg.setAttribute("height", '400');
-
-                // object
-                polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                if (!polygon){
-                    alert('objectの生成に失敗しました');
-                }
-                polygon.setAttribute("stroke",'skyblue');
-                polygon.setAttribute("fill",  'none');
-
-                // point 1
-                p = svg.createSVGPoint();
-                p.x = 20;
-                p.y = 30;
-                polygon.points.appendItem(p);
-
-                // point 2
-                p2 = svg.createSVGPoint();
-                p2.x = 50;
-                p2.y = 60;
-                polygon.points.appendItem(p2);
-
-                // point 3
-                p3 = svg.createSVGPoint();
-                p3.x = 40;
-                p3.y = 110;
-                polygon.points.appendItem(p3);
-                console.log('end');
-
-
-                circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                if (!circle){
-                    alert('circleの生成に失敗しました');
-                }
-
-                circle.setAttribute('cx', p.x);
-                circle.setAttribute('cy', p.y);
-                circle.setAttribute('r',  '10');
-                circle.setAttribute('fill',  'lightpink');
-
-
-                svg.appendChild(circle);
-                circle.onclick= hoge;
-                svg.appendChild(polygon);
-                document.getElementById('image_base').appendChild(svg);;
-                console.log('appende');
-            }
-        function hoge(){
-                alert(1);
-
-
-        }
         </script>
     </head>
     <body>

@@ -10,7 +10,7 @@ app.configure(function(){
   app.use(express.static(__dirname + '/public'));
   app.set("view options", { layout: false });
   app.get('/', function(req, res) {
-    res.render('index.ejs');
+    res.render('svg.ejs');
     });
 });
 
@@ -19,6 +19,7 @@ app.listen(8000);
 var socket = io.listen(app);
 socket.on('connection', function(client){
   client.on('message',    function(msg) {onMessage(msg, client);});
+
   client.on('disconnect', function()    {onDisconnect(client)});
 });
 
@@ -41,20 +42,22 @@ function onDisconnect(client)
           "type"      : messageType.STGING,
           "option"    : {"color" : "red"},
           "createdAt" : getNowDate()} ;
-  socket.broadcast(msg);
+  //socket.broadcast(msg);
 }
 
 function onMessage(msg, client)
 {
-  if (msg.type == messageType.GET_DATA) {
-    if (typeof msg.more_id == 'number') {
-      client.send(messages.slice(msg.more_id));
-    }
-  } else {
-    addMessage(msg);
-    client.send(msg);
-    client.broadcast(msg);
-  }
+  console.log(msg);
+  client.broadcast(msg);
+  //if (msg.type == messageType.GET_DATA) {
+  //  if (typeof msg.more_id == 'number') {
+  //    client.send(messages.slice(msg.more_id));
+  //  }
+  //} else {
+  //  addMessage(msg);
+  //  client.send(msg);
+  //  client.broadcast(msg);
+  //}
 }
 
 function getNowDate(){

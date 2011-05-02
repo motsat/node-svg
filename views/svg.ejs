@@ -1,0 +1,89 @@
+<html>
+<head>
+<script src="http://motoki.local:8000/js/socket.io.js"></script>
+<script src="http://motoki.local:8000/js/json2.js"></script>
+<script src="http://motoki.local:8000/js/raphael.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+
+<script type='text/javascript'>
+  var socket      = new io.Socket('motoki.local',{port:8000});
+  var status      = '';
+  socket.connect();
+  socket.on('connect',    onConnect);
+  socket.on('disconnect', onDisconnect);
+  socket.on('message',    onMessage);
+  function onConnect()
+  {
+  }
+  function onDisconnect()
+  {
+  }
+  function onMessage(msg)
+  {
+     circle.animate(msg.attr, 300, '<>');
+      log(msg.attr);
+  }
+  $(function(){
+    var raphael = Raphael(document.getElementById('svg_campus'), 200, 200);
+    circle = raphael.circle(x=50, y=50, r=40);
+    circle.attr({
+        'stroke':'blue',
+        'fill'  :'blue'});
+
+    //circle.onAnimation(onCircleAnimation)
+    //      .drag(onCircleDrag, onStartCircleDrag);
+    circle.drag(onCircleDrag, onCircleDragStart, onCircleDragEnd);
+
+    path = raphael.path("M00 00 L" + circle.attr("cx") + " " + circle.attr("cy"))
+          .attr({"stroke":"darkred", "stroke-width":2});
+
+    $('#move_button').bind('click', onMoveCircle);
+});
+function onMoveCircle()
+{
+    circle.animate({'cx':'250'}, 1000, '<>');
+}
+function onCircleAnimation()
+{
+    // circle_attr = circle.attr();
+    // path.attr({"path":"M00 00 L"+circle_attr.cx+" "+circle_attr.cy});
+}
+function onCircleDrag(x, y, a2, ay, event)
+{
+    // event.target;
+    circle.attr({"cx":this.ox+x, "cy":this.oy+ y})
+    path.attr({"path":"M00 00 L"+circle.attr("cx")+" "+circle.attr("cy")});
+
+}
+function onCircleDragStart(x,y)
+{
+    // socket.send({'action':'startEdit'});
+    log('start');
+    this.ox = this.attr("cx");
+    this.oy = this.attr("cy");
+    this.attr({opacity:'0.4'});
+
+}
+function onCircleDragEnd(x,y)
+{
+    var attr = {
+       "cx" : circle.attr('cx'),
+       "cy" : circle.attr('cy')};
+    socket.send({'action':'endEdit',
+                 'attr':attr});
+    this.attr({opacity:'1.0'});
+    log('end');
+}
+function log(msg)
+{
+    if (typeof console=='object') {
+        console.log(msg);
+    }
+}
+</script>
+</head>
+<h2>Raphael Test</h2>
+<body>
+    <div id='svg_campus'></div>
+    <input type='button' id='move_button'>
+</body>
