@@ -4,10 +4,22 @@
 <script src="http://motoki.local:8000/js/json2.js"></script>
 <script src="http://motoki.local:8000/js/raphael.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
+<!--<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.js"></script>-->
 
 <script type='text/javascript'>
-  var socket      = new io.Socket('motoki.local',{port:8000});
-  var status      = '';
+  var socket        = new io.Socket('motoki.local',{port:8000});
+  var circle_editable = true;
+  var objects = [];
+  var ACTION_TYPE   = {'REQUEST_CREATE' : 1,  // クライアントからの作成要求
+                       'CREATE'         : 2,  // クラインとへの作成指示（REQUEST_CREATE後)
+                       'REQUEST_LOCK'   : 3,  // サーバへのロック要求
+                       'LOCK'           : 4,   // クラインとへのロック指示(REQUEST_EDIT)を要求したクライアント以外に送るもの
+                       'REQUEST_EDIT'   : 5,  // サーバへの編集要求
+                       'EDIT'           : 6   // クライントへの編集指示（REQUEST_EDIT後)
+  };
+  var OBJECT_TYPE   = {"CIRCLE":"1"};
+  var OBJECT_STATUS = {"LOCK":"1", "NONE":"0"};
+  var raphael;
   socket.connect();
   socket.on('connect',    onConnect);
   socket.on('disconnect', onDisconnect);
@@ -20,25 +32,73 @@
   }
   function onMessage(msg)
   {
-     circle.animate(msg.attr, 300, '<>');
-      log(msg.attr);
+      switch (msg.action) {
+      case ACTION_TYPE.CREATE:
+          createObject(msg.type, msg.id);
+          break;
+      case ACTION_TYPE.LOCK:
+          updateObject(msg.id, {'status':OBJECT_STATUS.LOCK});
+          break;
+      case ACTION_TYPE.EDIT:
+          updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
+          break;
+      /* else if (msg.action == 'startEdit') {
+          circle_editable = false;
+      } else if (msg.action == 'endEdit') {
+          circle.animate(msg.attr, 300, '<>');
+          circle_editable = true;
+          // circle_status = '';
+      }*/
+      }
   }
-  $(function(){
-    var raphael = Raphael(document.getElementById('svg_campus'), 200, 200);
-    circle = raphael.circle(x=50, y=50, r=40);
-    circle.attr({
-        'stroke':'blue',
-        'fill'  :'blue'});
+  $ (function(){
+    raphael = Raphael(document.getElementById('svg_campus'), 200, 200);
+    // circle.onAnimation(onCircleAnimation)
+    //       .drag(onCircleDrag, onStartCircleDrag);
+    // requestCreateObject(OBJECT_TYPE.CIRCLE);
 
-    //circle.onAnimation(onCircleAnimation)
-    //      .drag(onCircleDrag, onStartCircleDrag);
-    circle.drag(onCircleDrag, onCircleDragStart, onCircleDragEnd);
-
-    path = raphael.path("M00 00 L" + circle.attr("cx") + " " + circle.attr("cy"))
-          .attr({"stroke":"darkred", "stroke-width":2});
+    // path = raphael.path("M00 00 L" + circle.attr("cx") + " " + circle.attr("cy"))
+    //       .attr({"stroke":"darkred", "stroke-width":2});
 
     $('#move_button').bind('click', onMoveCircle);
+    $('#creae_button').bind('click', requestCreateObject);
 });
+
+function requestCreateObject()
+{
+    socket.send({"action":ACTION_TYPE.REQUEST_CREATE,
+                 "type"  :$('#object_type').val()});
+}
+function createObject(type, id)
+{
+    if (OBJECT_TYPE.CIRCLE) {
+        var circle = raphael.circle(x=50, y=50, r=40)
+                     .attr({'stroke':'darkgray', 'fill':'blue'})
+                     .drag(onCircleDrag, onCircleDragStart, onCircleDragEnd);
+
+        $(circle.node).attr('id',id);
+    }
+
+    var obj = {
+        'id'     : id,
+        'object' : circle,
+        'type'   : type,
+        'status' : OBJECT_STATUS.NONE,
+    };
+
+    objects.push(obj);
+}
+function updateObject(id, param)
+{
+    var obj = findObject(id);
+    if (param.status != '') {
+        obj.status  = param.status;
+    }
+
+    if (typeof param.attr == 'object'){
+        obj.object.animate(param.attr, 1000);
+    }
+}
 function onMoveCircle()
 {
     circle.animate({'cx':'250'}, 1000, '<>');
@@ -50,15 +110,41 @@ function onCircleAnimation()
 }
 function onCircleDrag(x, y, a2, ay, event)
 {
+    if (isObjectLocked($(event.target).attr('id'))) {
+        log('object is locked');
+        return;
+    }
+
     // event.target;
-    circle.attr({"cx":this.ox+x, "cy":this.oy+ y})
-    path.attr({"path":"M00 00 L"+circle.attr("cx")+" "+circle.attr("cy")});
+    this.attr({"cx":this.ox+x, "cy":this.oy+y})
+    //path.attr({"path":"M00 00 L"+this.attr("cx")+" "+this.attr("cy")});
 
 }
-function onCircleDragStart(x,y)
+function findObject(id){
+    for (var i in objects) {
+        if (id ==  objects[i].id) {
+            return objects[i];
+        }
+    }
+    throw 'object not found id:'+id;
+}
+function isObjectLocked(id)
 {
-    // socket.send({'action':'startEdit'});
-    log('start');
+    var obj = findObject(id);
+    return obj.status == OBJECT_STATUS.LOCK;
+}
+function onCircleDragStart(x, y, event)
+{
+    log('drag id:' + $(event.target).attr('id'));
+
+    if (isObjectLocked($(event.target).attr('id'))) {
+        log('object is locked');
+        return;
+    }
+
+    socket.send({'action': ACTION_TYPE.REQUEST_LOCK,
+                 'id': $(event.target).attr('id')});
+
     this.ox = this.attr("cx");
     this.oy = this.attr("cy");
     this.attr({opacity:'0.4'});
@@ -66,17 +152,22 @@ function onCircleDragStart(x,y)
 }
 function onCircleDragEnd(x,y)
 {
+    if (isObjectLocked($(event.target).attr('id'))) {
+        log('object is locked');
+        return;
+    }
+
     var attr = {
-       "cx" : circle.attr('cx'),
-       "cy" : circle.attr('cy')};
-    socket.send({'action':'endEdit',
-                 'attr':attr});
+       "cx" : this.attr('cx'),
+       "cy" : this.attr('cy')};
+    socket.send({"action": ACTION_TYPE.REQUEST_EDIT,
+                 "id"    : $(this.node).attr('id'),
+                "attr"   : attr});
     this.attr({opacity:'1.0'});
-    log('end');
 }
 function log(msg)
 {
-    if (typeof console=='object') {
+    if (typeof console == 'object') {
         console.log(msg);
     }
 }
@@ -84,6 +175,12 @@ function log(msg)
 </head>
 <h2>Raphael Test</h2>
 <body>
+    <input type='button' id='creae_button' value='create'>
+    <select id='object_type'>
+        <option value='1'>circle</option>
+    </select>
+    <hr/>
     <div id='svg_campus'></div>
+    <hr/>
     <input type='button' id='move_button'>
 </body>
