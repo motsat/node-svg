@@ -52,7 +52,7 @@
       }
   }
   $ (function(){
-    raphael = Raphael(document.getElementById('svg_campus'), 200, 200);
+    raphael = Raphael(document.getElementById('svg_campus'), 500, 500);
     // circle.onAnimation(onCircleAnimation)
     //       .drag(onCircleDrag, onStartCircleDrag);
     // requestCreateObject(OBJECT_TYPE.CIRCLE);
@@ -73,17 +73,17 @@ function createObject(type, id)
 {
     if (OBJECT_TYPE.CIRCLE) {
         var circle = raphael.circle(x=50, y=50, r=40)
-                     .attr({'stroke':'darkgray', 'fill':'blue'})
+            .attr({'gradient':'270-#9ACD32-#FFFF00'})
                      .drag(onCircleDrag, onCircleDragStart, onCircleDragEnd);
-
         $(circle.node).attr('id',id);
+        circle.id = id;
     }
 
     var obj = {
         'id'     : id,
         'object' : circle,
         'type'   : type,
-        'status' : OBJECT_STATUS.NONE,
+        'status' : OBJECT_STATUS.NONE
     };
 
     objects.push(obj);
@@ -96,12 +96,12 @@ function updateObject(id, param)
     }
 
     if (typeof param.attr == 'object'){
-        obj.object.animate(param.attr, 1000);
+        obj.object.animate(param.attr, 300);
     }
 }
 function onMoveCircle()
 {
-    circle.animate({'cx':'250'}, 1000, '<>');
+    circle.animate({'cx':'250'}, 300, '<>');
 }
 function onCircleAnimation()
 {
@@ -110,15 +110,22 @@ function onCircleAnimation()
 }
 function onCircleDrag(x, y, a2, ay, event)
 {
-    if (isObjectLocked($(event.target).attr('id'))) {
-        log('object is locked');
+    //var id = event.target.id;
+    log('a');
+    log($(event.target));
+    var id = this.id;
+    if (id == '') {
+        throw 'onCircleDrag event.target.id is empty';
+    }
+
+    if (isObjectLocked(id)) {
+        log('object locked');
         return;
     }
 
     // event.target;
     this.attr({"cx":this.ox+x, "cy":this.oy+y})
-    //path.attr({"path":"M00 00 L"+this.attr("cx")+" "+this.attr("cy")});
-
+    // path.attr({"path":"M00 00 L"+this.attr("cx")+" "+this.attr("cy")});
 }
 function findObject(id){
     for (var i in objects) {
@@ -126,7 +133,7 @@ function findObject(id){
             return objects[i];
         }
     }
-    throw 'object not found id:'+id;
+    throw 'object not found id:' + id;
 }
 function isObjectLocked(id)
 {
@@ -135,9 +142,7 @@ function isObjectLocked(id)
 }
 function onCircleDragStart(x, y, event)
 {
-    log('drag id:' + $(event.target).attr('id'));
-
-    if (isObjectLocked($(event.target).attr('id'))) {
+    if (isObjectLocked(this.id)) {
         log('object is locked');
         return;
     }
@@ -150,9 +155,11 @@ function onCircleDragStart(x, y, event)
     this.attr({opacity:'0.4'});
 
 }
-function onCircleDragEnd(x,y)
+function onCircleDragEnd(event)
 {
-    if (isObjectLocked($(event.target).attr('id'))) {
+    log('onCircleDragEnd');
+    if (isObjectLocked(this.id)) {
+    //if (isObjectLocked(event.target.id)) {
         log('object is locked');
         return;
     }
@@ -160,9 +167,10 @@ function onCircleDragEnd(x,y)
     var attr = {
        "cx" : this.attr('cx'),
        "cy" : this.attr('cy')};
+
     socket.send({"action": ACTION_TYPE.REQUEST_EDIT,
                  "id"    : $(this.node).attr('id'),
-                "attr"   : attr});
+                 "attr"  : attr});
     this.attr({opacity:'1.0'});
 }
 function log(msg)
