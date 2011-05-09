@@ -2,20 +2,21 @@ var io            = require('socket.io'),
     express       = require('express'),
     objects      = [],
     ACTION_TYPE   = {'REQUEST_CREATE' : 1,  // クライアントからの作成要求
-                    'CREATE'         : 2,  // クラインとへの作成指示（REQUEST_CREATE後)
-                    'REQUEST_LOCK'   : 3,  // サーバへのロック要求
-                    'LOCK'           : 4,   // クラインとへのロック指示(REQUEST_EDIT)を要求したクライアント以外に送るもの
-                    'REQUEST_EDIT'   : 5,  // サーバへの編集要求
-                    'EDIT'           : 6   // クライントへの編集指示（REQUEST_EDIT後)
+                     'CREATE'         : 2,  // クラインとへの作成指示（REQUEST_CREATE後)
+                     'REQUEST_LOCK'   : 3,  // サーバへのロック要求
+                     'LOCK'           : 4,  // クラインとへのロック指示(REQUEST_EDIT)を要求したクライアント以外に送るもの
+                     'REQUEST_EDIT'   : 5,  // サーバへの編集要求
+                     'EDIT'           : 6   // クライントへの編集指示（REQUEST_EDIT後)
                     };
+
 var app = express.createServer();
 app.configure(function(){
-  app.set('views', __dirname + '/views');
-  app.use(express.static(__dirname + '/public'));
-  app.set("view options", { layout: false });
-  app.get('/', function(req, res) {
-    res.render('svg.ejs');
-    });
+    app.set('views', __dirname + '/views')
+       .use(express.static(__dirname + '/public'))
+       .set("view options", { layout: false })
+       .get('/', function(req, res) {
+         res.render('svg.ejs');
+       });
 });
 
 app.listen(8000);
@@ -80,7 +81,7 @@ function onMessage(msg, client)
   case ACTION_TYPE.REQUEST_EDIT:
     var obj = {
       "action": ACTION_TYPE.EDIT,
-      "attr": msg.attr,
+      "attr"  : msg.attr,
       "id"    : msg.id};
     client.broadcast(obj);
     break;

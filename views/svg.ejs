@@ -1,29 +1,30 @@
 <html>
 <head>
-<script src="http://motoki.local:8000/js/socket.io.js"></script>
-<script src="http://motoki.local:8000/js/json2.js"></script>
-<script src="http://motoki.local:8000/js/raphael.js"></script>
+<script src="/js/socket.io.js"></script>
+<script src="/js/json2.js"></script>
+<script src="/js/raphael.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
-<!--<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.12/jquery-ui.js"></script>-->
 
 <script type='text/javascript'>
-  var socket        = new io.Socket('motoki.local',{port:8000});
-  var circle_editable = true;
-  var objects = [];
-  var ACTION_TYPE   = {'REQUEST_CREATE' : 1,  // クライアントからの作成要求
-                       'CREATE'         : 2,  // クラインとへの作成指示（REQUEST_CREATE後)
-                       'REQUEST_LOCK'   : 3,  // サーバへのロック要求
-                       'LOCK'           : 4,   // クラインとへのロック指示(REQUEST_EDIT)を要求したクライアント以外に送るもの
-                       'REQUEST_EDIT'   : 5,  // サーバへの編集要求
-                       'EDIT'           : 6   // クライントへの編集指示（REQUEST_EDIT後)
-  };
-  var OBJECT_TYPE   = {"CIRCLE":"1"};
-  var OBJECT_STATUS = {"LOCK":"1", "NONE":"0"};
-  var raphael;
+  var socket          = new io.Socket('motoki.local',{port:8000}),
+      circle_editable = true,
+      objects         = [],
+      ACTION_TYPE     = {'REQUEST_CREATE' : 1,  // クライアントからの作成要求
+                         'CREATE'         : 2,  // クラインとへの作成指示（REQUEST_CREATE後)
+                         'REQUEST_LOCK'   : 3,  // サーバへのロック要求
+                         'LOCK'           : 4,   // クラインとへのロック指示(REQUEST_EDIT)を要求したクライアント以外に送るもの
+                         'REQUEST_EDIT'   : 5,  // サーバへの編集要求
+                         'EDIT'           : 6   // クライントへの編集指示（REQUEST_EDIT後)
+  },
+      OBJECT_TYPE     = {"CIRCLE":"1"},
+      OBJECT_STATUS   = {"LOCK":"1", "NONE":"0"},
+      raphael;
+
   socket.connect();
   socket.on('connect',    onConnect);
   socket.on('disconnect', onDisconnect);
   socket.on('message',    onMessage);
+
   function onConnect()
   {
   }
@@ -42,16 +43,9 @@
       case ACTION_TYPE.EDIT:
           updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
           break;
-      /* else if (msg.action == 'startEdit') {
-          circle_editable = false;
-      } else if (msg.action == 'endEdit') {
-          circle.animate(msg.attr, 300, '<>');
-          circle_editable = true;
-          // circle_status = '';
-      }*/
       }
   }
-  $ (function(){
+  $ (function() {
     raphael = Raphael(document.getElementById('svg_campus'), 500, 500);
     // circle.onAnimation(onCircleAnimation)
     //       .drag(onCircleDrag, onStartCircleDrag);
@@ -159,7 +153,6 @@ function onCircleDragEnd(event)
 {
     log('onCircleDragEnd');
     if (isObjectLocked(this.id)) {
-    //if (isObjectLocked(event.target.id)) {
         log('object is locked');
         return;
     }
