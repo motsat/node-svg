@@ -3,60 +3,53 @@
 <script src="/js/socket.io.js"></script>
 <script src="/js/json2.js"></script>
 <script src="/js/raphael.js"></script>
+<script src="/js/objectMaker.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
 
 <script type='text/javascript'>
-  var socket          = new io.Socket('motoki.local',{port:8000}),
-      circle_editable = true,
-      objects         = [],
-      ACTION_TYPE     = {'REQUEST_CREATE' : 1,  // クライアントからの作成要求
-                         'CREATE'         : 2,  // クラインとへの作成指示（REQUEST_CREATE後)
-                         'REQUEST_LOCK'   : 3,  // サーバへのロック要求
-                         'LOCK'           : 4,   // クラインとへのロック指示(REQUEST_EDIT)を要求したクライアント以外に送るもの
-                         'REQUEST_EDIT'   : 5,  // サーバへの編集要求
-                         'EDIT'           : 6   // クライントへの編集指示（REQUEST_EDIT後)
-  },
-      OBJECT_TYPE     = {"CIRCLE":"1"},
-      OBJECT_STATUS   = {"LOCK":"1", "NONE":"0"},
-      raphael;
+var socket          = new io.Socket('motoki.local',{port:8000}),
+    objects         = [],
+    ACTION_TYPE     = {'REQUEST_CREATE' : 1,  // クライアントからの作成要求
+                       'CREATE'         : 2,  // クラインとへの作成指示（REQUEST_CREATE後)
+                       'REQUEST_LOCK'   : 3,  // サーバへのロック要求
+                       'LOCK'           : 4,   // クラインとへのロック指示(REQUEST_EDIT)を要求したクライアント以外に送るもの
+                       'REQUEST_EDIT'   : 5,  // サーバへの編集要求
+                       'EDIT'           : 6   // クライントへの編集指示（REQUEST_EDIT後)
+    },
 
-  socket.connect();
-  socket.on('connect',    onConnect);
-  socket.on('disconnect', onDisconnect);
-  socket.on('message',    onMessage);
+    OBJECT_TYPE     = {"CIRCLE":"1"},
+    OBJECT_STATUS   = {"LOCK":"1", "NONE":"0"},
+    raphael;
 
-  function onConnect()
-  {
+socket.connect();
+socket.on('connect',    onConnect);
+socket.on('disconnect', onDisconnect);
+socket.on('message',    onMessage);
+
+function onConnect()
+{
+}
+function onDisconnect()
+{
+}
+function onMessage(msg)
+{
+  switch (msg.action) {
+    case ACTION_TYPE.CREATE:
+      createObject(msg.type, msg.id);
+      break;
+    case ACTION_TYPE.LOCK:
+      updateObject(msg.id, {'status':OBJECT_STATUS.LOCK});
+      break;
+    case ACTION_TYPE.EDIT:
+      updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
+      break;
   }
-  function onDisconnect()
-  {
-  }
-  function onMessage(msg)
-  {
-      switch (msg.action) {
-      case ACTION_TYPE.CREATE:
-          createObject(msg.type, msg.id);
-          break;
-      case ACTION_TYPE.LOCK:
-          updateObject(msg.id, {'status':OBJECT_STATUS.LOCK});
-          break;
-      case ACTION_TYPE.EDIT:
-          updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
-          break;
-      }
-  }
-  $ (function() {
+}
+$ (function() {
     raphael = Raphael(document.getElementById('svg_campus'), 500, 500);
-    // circle.onAnimation(onCircleAnimation)
-    //       .drag(onCircleDrag, onStartCircleDrag);
-    // requestCreateObject(OBJECT_TYPE.CIRCLE);
-
-    // path = raphael.path("M00 00 L" + circle.attr("cx") + " " + circle.attr("cy"))
-    //       .attr({"stroke":"darkred", "stroke-width":2});
-
-    $('#move_button').bind('click', onMoveCircle);
     $('#creae_button').bind('click', requestCreateObject);
-});
+    });
 
 function requestCreateObject()
 {
@@ -65,63 +58,34 @@ function requestCreateObject()
 }
 function createObject(type, id)
 {
-    if (OBJECT_TYPE.CIRCLE) {
-        var circle = raphael.circle(x=50, y=50, r=40)
-            .attr({'gradient':'270-#9ACD32-#FFFF00'})
-                     .drag(onCircleDrag, onCircleDragStart, onCircleDragEnd);
-        $(circle.node).attr('id',id);
-        circle.id = id;
+    if (type == OBJECT_TYPE.CIRCLE) {
+      var objectName = 'Circle';
     }
 
-    var obj = {
-        'id'     : id,
-        'object' : circle,
-        'type'   : type,
-        'status' : OBJECT_STATUS.NONE
-    };
-
-    objects.push(obj);
+    var newObj = ObjectMaker.factory(objectName, raphael, id);
+    newObj.object.drag(onCircleDrag, onCircleDragStart, onCircleDragEnd); 
+    objects.push(newObj);
 }
 function updateObject(id, param)
 {
     var obj = findObject(id);
     if (param.status != '') {
-        obj.status  = param.status;
+        obj.setStatus(param.status);
     }
-
     if (typeof param.attr == 'object'){
         obj.object.animate(param.attr, 300);
     }
 }
-function onMoveCircle()
+function onCircleDrag(x, y)
 {
-    circle.animate({'cx':'250'}, 300, '<>');
-}
-function onCircleAnimation()
-{
-    // circle_attr = circle.attr();
-    // path.attr({"path":"M00 00 L"+circle_attr.cx+" "+circle_attr.cy});
-}
-function onCircleDrag(x, y, a2, ay, event)
-{
-    //var id = event.target.id;
-    log('a');
-    log($(event.target));
-    var id = this.id;
-    if (id == '') {
-        throw 'onCircleDrag event.target.id is empty';
-    }
-
-    if (isObjectLocked(id)) {
+    if (isObjectLocked(this.id)) {
         log('object locked');
         return;
     }
-
-    // event.target;
-    this.attr({"cx":this.ox+x, "cy":this.oy+y})
-    // path.attr({"path":"M00 00 L"+this.attr("cx")+" "+this.attr("cy")});
+    this.attr({"cx":this.ox + x, "cy":this.oy + y})
 }
-function findObject(id){
+function findObject(id)
+{
     for (var i in objects) {
         if (id ==  objects[i].id) {
             return objects[i];
@@ -131,8 +95,7 @@ function findObject(id){
 }
 function isObjectLocked(id)
 {
-    var obj = findObject(id);
-    return obj.status == OBJECT_STATUS.LOCK;
+    return findObject(id).getStatus() == OBJECT_STATUS.LOCK;
 }
 function onCircleDragStart(x, y, event)
 {
@@ -140,9 +103,8 @@ function onCircleDragStart(x, y, event)
         log('object is locked');
         return;
     }
-
     socket.send({'action': ACTION_TYPE.REQUEST_LOCK,
-                 'id': $(event.target).attr('id')});
+                 'id': this.id});
 
     this.ox = this.attr("cx");
     this.oy = this.attr("cy");
@@ -162,7 +124,7 @@ function onCircleDragEnd(event)
        "cy" : this.attr('cy')};
 
     socket.send({"action": ACTION_TYPE.REQUEST_EDIT,
-                 "id"    : $(this.node).attr('id'),
+                 "id"    : this.id,
                  "attr"  : attr});
     this.attr({opacity:'1.0'});
 }
