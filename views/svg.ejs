@@ -3,28 +3,21 @@
 <script src="/js/socket.io.js"></script>
 <script src="/js/json2.js"></script>
 <script src="/js/raphael.js"></script>
+<script src="/js/objectConst.js"></script>
 <script src="/js/objectMaker.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
 
 <script type='text/javascript'>
-var socket          = new io.Socket('motoki.local',{port:8000}),
-    objects         = [],
-    ACTION_TYPE     = {'REQUEST_CREATE' : 1,  // クライアントからの作成要求
-                       'CREATE'         : 2,  // クラインとへの作成指示（REQUEST_CREATE後)
-                       'REQUEST_LOCK'   : 3,  // サーバへのロック要求
-                       'LOCK'           : 4,   // クラインとへのロック指示(REQUEST_EDIT)を要求したクライアント以外に送るもの
-                       'REQUEST_EDIT'   : 5,  // サーバへの編集要求
-                       'EDIT'           : 6   // クライントへの編集指示（REQUEST_EDIT後)
-    },
 
-    OBJECT_TYPE     = {"CIRCLE":"1"},
-    OBJECT_STATUS   = {"LOCK":"1", "NONE":"0"},
+
+var socket           = new io.Socket('motoki.local',{port:8000}),
+    objectCollection = new ObjectCollection(),
     raphael;
 
-socket.connect();
-socket.on('connect',    onConnect);
-socket.on('disconnect', onDisconnect);
-socket.on('message',    onMessage);
+socket.connect()
+      .on('connect',    onConnect)
+      .on('disconnect', onDisconnect)
+      .on('message',    onMessage);
 
 function onConnect()
 {
@@ -32,43 +25,44 @@ function onConnect()
 function onDisconnect()
 {
 }
+// mediator.onMessage
 function onMessage(msg)
 {
-  switch (msg.action) {
+    switch (msg.action) {
     case ACTION_TYPE.CREATE:
-      createObject(msg.type, msg.id);
-      break;
+        createObject(msg.id, msg.type);
+        break;
     case ACTION_TYPE.LOCK:
-      updateObject(msg.id, {'status':OBJECT_STATUS.LOCK});
-      break;
+        updateObject(msg.id, {'status':OBJECT_STATUS.LOCK});
+        break;
     case ACTION_TYPE.EDIT:
-      updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
-      break;
-  }
+        updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
+        break;
+    }
 }
 $ (function() {
     raphael = Raphael(document.getElementById('svg_campus'), 500, 500);
     $('#creae_button').bind('click', requestCreateObject);
-    });
+});
 
+// mediator.requestCreateObject(type);
 function requestCreateObject()
 {
     socket.send({"action":ACTION_TYPE.REQUEST_CREATE,
                  "type"  :$('#object_type').val()});
 }
-function createObject(type, id)
+// mediator.crateObject(id, type)
+function createObject(id, type)
 {
     if (type == OBJECT_TYPE.CIRCLE) {
       var objectName = 'Circle';
     }
-
-    var newObj = ObjectMaker.factory(objectName, raphael, id);
-    newObj.object.drag(onCircleDrag, onCircleDragStart, onCircleDragEnd); 
-    objects.push(newObj);
+    objectCollection.add(ObjectMaker.factory(objectName, raphael, id)); 
 }
+// mediator.updateObject(id, type)
 function updateObject(id, param)
 {
-    var obj = findObject(id);
+    var obj = objectCollection.find(id);
     if (param.status != '') {
         obj.setStatus(param.status);
     }
@@ -76,58 +70,7 @@ function updateObject(id, param)
         obj.object.animate(param.attr, 300);
     }
 }
-function onCircleDrag(x, y)
-{
-    if (isObjectLocked(this.id)) {
-        log('object locked');
-        return;
-    }
-    this.attr({"cx":this.ox + x, "cy":this.oy + y})
-}
-function findObject(id)
-{
-    for (var i in objects) {
-        if (id ==  objects[i].id) {
-            return objects[i];
-        }
-    }
-    throw 'object not found id:' + id;
-}
-function isObjectLocked(id)
-{
-    return findObject(id).getStatus() == OBJECT_STATUS.LOCK;
-}
-function onCircleDragStart(x, y, event)
-{
-    if (isObjectLocked(this.id)) {
-        log('object is locked');
-        return;
-    }
-    socket.send({'action': ACTION_TYPE.REQUEST_LOCK,
-                 'id': this.id});
 
-    this.ox = this.attr("cx");
-    this.oy = this.attr("cy");
-    this.attr({opacity:'0.4'});
-
-}
-function onCircleDragEnd(event)
-{
-    log('onCircleDragEnd');
-    if (isObjectLocked(this.id)) {
-        log('object is locked');
-        return;
-    }
-
-    var attr = {
-       "cx" : this.attr('cx'),
-       "cy" : this.attr('cy')};
-
-    socket.send({"action": ACTION_TYPE.REQUEST_EDIT,
-                 "id"    : this.id,
-                 "attr"  : attr});
-    this.attr({opacity:'1.0'});
-}
 function log(msg)
 {
     if (typeof console == 'object') {
@@ -141,6 +84,7 @@ function log(msg)
     <input type='button' id='creae_button' value='create'>
     <select id='object_type'>
         <option value='1'>circle</option>
+        <option value='2'>path</option>
     </select>
     <hr/>
     <div id='svg_campus'></div>
