@@ -10,66 +10,14 @@
 <script type='text/javascript'>
 
 
-var socket           = new io.Socket('motoki.local',{port:8000}),
-    objectCollection = new ObjectCollection(),
-    raphael;
 
-socket.connect()
-      .on('connect',    onConnect)
-      .on('disconnect', onDisconnect)
-      .on('message',    onMessage);
-
-function onConnect()
-{
-}
-function onDisconnect()
-{
-}
-// mediator.onMessage
-function onMessage(msg)
-{
-    switch (msg.action) {
-    case ACTION_TYPE.CREATE:
-        createObject(msg.id, msg.type);
-        break;
-    case ACTION_TYPE.LOCK:
-        updateObject(msg.id, {'status':OBJECT_STATUS.LOCK});
-        break;
-    case ACTION_TYPE.EDIT:
-        updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
-        break;
-    }
-}
 $ (function() {
-    raphael = Raphael(document.getElementById('svg_campus'), 500, 500);
-    $('#creae_button').bind('click', requestCreateObject);
+        mediator = new ObjectMediator(); 
+        mediator.setUp();
+        //raphael = Raphael(document.getElementById('svg_campus'), 500, 500);
+    //$('#creae_button').bind('click', requestCreateObject);
 });
 
-// mediator.requestCreateObject(type);
-function requestCreateObject()
-{
-    socket.send({"action":ACTION_TYPE.REQUEST_CREATE,
-                 "type"  :$('#object_type').val()});
-}
-// mediator.crateObject(id, type)
-function createObject(id, type)
-{
-    if (type == OBJECT_TYPE.CIRCLE) {
-      var objectName = 'Circle';
-    }
-    objectCollection.add(ObjectMaker.factory(objectName, raphael, id)); 
-}
-// mediator.updateObject(id, type)
-function updateObject(id, param)
-{
-    var obj = objectCollection.find(id);
-    if (param.status != '') {
-        obj.setStatus(param.status);
-    }
-    if (typeof param.attr == 'object'){
-        obj.object.animate(param.attr, 300);
-    }
-}
 
 function log(msg)
 {

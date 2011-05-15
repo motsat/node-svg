@@ -25,11 +25,47 @@ ObjectMediator.prototype.setUp  = function() {
        socket     = new io.Socket('motoki.local',{port:8000}),
        raphael    = Raphael(document.getElementById('svg_campus'), 500, 500);
 
-   socket.connect()
-      .on('connect',    this.onConnect)
-      .on('disconnect', this.onDisconnect)
-      .on('message',    this.onMessage);
-   $('#creae_button').bind('click', requestCreateObject);
+     socket.connect().on('message', function(msg)
+     {
+       switch (msg.action) {
+         case ACTION_TYPE.CREATE:
+           createObject(msg.id, msg.type);
+           break;
+         case ACTION_TYPE.LOCK:
+           updateObject(msg.id, {'status':OBJECT_STATUS.LOCK});
+           break;
+         case ACTION_TYPE.EDIT:
+           updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
+           break;
+       }
+     });
+
+     $('#creae_button').bind('click', function() {
+         socket.send({"action":ACTION_TYPE.REQUEST_CREATE,
+           "type"  :$('#object_type').val()});
+         });
+
+// mediator.crateObject(id, type)
+var createObject = function (id, type)
+{
+    if (type == OBJECT_TYPE.CIRCLE) {
+      var objectName = 'Circle';
+    }
+    collection.add(ObjectMaker.factory(objectName, raphael, id)); 
+};
+
+// mediator.updateObject(id, type)
+var  updateObject  = function(id, param)
+{
+    var obj = collection.find(id);
+    if (param.status != '') {
+        obj.setStatus(param.status);
+    }
+    if (typeof param.attr == 'object'){
+        obj.object.animate(param.attr, 300);
+    }
+}
+
 };
 
 // 以下の仲介役
