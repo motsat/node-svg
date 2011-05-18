@@ -5,19 +5,16 @@
 <script src="/js/raphael.js"></script>
 <script src="/js/objectConst.js"></script>
 <script src="/js/objectMaker.js"></script>
+<script src="/js/objectMediator.js"></script>
+<script src="/js/objectCollection.js"></script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.2/jquery.min.js"></script>
 
 <script type='text/javascript'>
 
-
-
 $ (function() {
-        mediator = new ObjectMediator(); 
-        mediator.setUp();
-        //raphael = Raphael(document.getElementById('svg_campus'), 500, 500);
-    //$('#creae_button').bind('click', requestCreateObject);
+    mediator = new ObjectMediator(); 
+    mediator.setUp();
 });
-
 
 function log(msg)
 {
