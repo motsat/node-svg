@@ -6,6 +6,7 @@ function ObjectMaker() {};
 ObjectMaker.prototype.setMediator = function(mediator) {this.mediator = mediator};
 ObjectMaker.prototype.setStatus   = function(status) {this.status = status};
 ObjectMaker.prototype.getStatus   = function(status) {return this.status};
+ObjectMaker.prototype.isLocked    = function(status) {return this.getStatus() == OBJECT_STATUS.LOCK};
 ObjectMaker.prototype.getObject   = function(status) {return this.raphaelObject};
 ObjectMaker.prototype.setType     = function(status) {return this.type};
 ObjectMaker.prototype.getType     = function(status) {return this.type};
@@ -39,6 +40,7 @@ ObjectMaker.Circle = function (raphael){
   this.type = OBJECT_TYPE.CIRCLE;
   this.object = raphael.circle(x=50, y=50, r=40)
     .attr({'gradient':'270-#9ACD32-#FFFF00'})
+
     var onCircleDragStart = function(x, y, event)
     {
       if (this.parent.getStatus() == OBJECT_STATUS.LOCK){
@@ -51,7 +53,7 @@ ObjectMaker.Circle = function (raphael){
       this.mediator.onObjectDragStart(this.id);
     };
   var onCircleDrag = function(x, y){
-    if (this.parent.getStatus() == OBJECT_STATUS.LOCK){
+    if (this.parent.isLocked()) {
       return;
     }
     this.attr({"cx":this.ox + x, "cy":this.oy + y})
@@ -60,8 +62,7 @@ ObjectMaker.Circle = function (raphael){
 
   var onCircleDragEnd = function(event)
   {
-    if (this.parent.getStatus() == OBJECT_STATUS.LOCK){
-      log('object is locked');
+    if (this.parent.isLocked()) {
       return;
     }
 
@@ -79,8 +80,16 @@ ObjectMaker.Path = function (raphael){
   this.type = OBJECT_TYPE.PATH;
   this.object = raphael.path("M00 00 L50 100")
       .attr({"stroke":"darkred", "stroke-width":2})
+
   var onCircleDragStart = function(event){
-      log(' path drag start');
+
+      if (this.parent.isLocked()) {
+        return;
+      }
+      this.ox = this.attr("cx");
+      this.oy = this.attr("cy");
+      this.attr({opacity:'0.4'});
+      this.mediator.onObjectDragStart(this.id);
   }
   var onCircleDrag      = function(event){
       log(' path drag');
