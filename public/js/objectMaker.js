@@ -41,7 +41,7 @@ ObjectMaker.Circle = function (raphael){
   this.object = raphael.circle(x=50, y=50, r=40)
     .attr({'gradient':'270-#9ACD32-#FFFF00'})
 
-    var onCircleDragStart = function(x, y, event)
+    var onDragStart = function(x, y, event)
     {
       if (this.parent.getStatus() == OBJECT_STATUS.LOCK){
         log('object is locked');
@@ -52,7 +52,7 @@ ObjectMaker.Circle = function (raphael){
       this.attr({opacity:'0.4'});
       this.mediator.onObjectDragStart(this.id);
     };
-  var onCircleDrag = function(x, y){
+  var onDrag = function(x, y){
     if (this.parent.isLocked()) {
       return;
     }
@@ -60,8 +60,7 @@ ObjectMaker.Circle = function (raphael){
   };
 
 
-  var onCircleDragEnd = function(event)
-  {
+  var onDragEnd = function(event) {
     if (this.parent.isLocked()) {
       return;
     }
@@ -73,30 +72,55 @@ ObjectMaker.Circle = function (raphael){
 
     this.attr({opacity:'1.0'});
   }
-  this.object.drag(onCircleDrag, onCircleDragStart, onCircleDragEnd);
+  this.object.drag(onDrag, onDragStart, onDragEnd);
 }
 
 ObjectMaker.Path = function (raphael){
   this.type = OBJECT_TYPE.PATH;
   this.object = raphael.path("M00 00 L50 100")
-      .attr({"stroke":"darkred", "stroke-width":2})
+      .attr({"stroke":"darkred", "stroke-width":2});
 
-  var onCircleDragStart = function(event){
+      //raphael.path("M00 00 L50 100")
+      //.attr({"stroke":"darkblue", "stroke-width":2})
+      //.translate(0, 10); // x, y
+// M=始点、L=終点？
+  var onDragStart = function(event){
+    if (this.parent.isLocked()) {
+      return;
+    }
 
-      if (this.parent.isLocked()) {
-        return;
-      }
-      this.ox = this.attr("cx");
-      this.oy = this.attr("cy");
-      this.attr({opacity:'0.4'});
-      this.mediator.onObjectDragStart(this.id);
+    // this.ox = this.attr("cx");
+    // this.oy = this.attr("cy");
+    //   this.attr();
+    //   fill: "none"
+    //   path: Array[2]
+    //   0: Array[3]
+    //   1: Array[3]
+    //   length: 2
+    //   toString: function () {
+    //   __proto__: Array[0]
+    //   stroke: "darkred"
+    //   stroke-width: 2
+
+    this.opath = this.attr().path;
+
+
+    this.attr({opacity:'0.4'});
+    this.mediator.onObjectDragStart(this.id);
   }
-  var onCircleDrag      = function(event){
-      log(' path drag');
+  var onDrag = function(x, y){
+    var opath = this.opath;
+
+    // path[0][1] = opath[0][1] + x,
+    // path[0][2] = opath[0][2] + y;
+    // path[1][1] = opath[1][1] + x;
+    // path[1][2] = opath[1][2] + y;
+    //console.log(x,y);
+    //console.log(this.translate(_x, _y));
+    log(' path drag');
   }
-  var onCircleDragEnd   = function(event){
-      log(' path drag end');
+  var onDragEnd = function(event){
+    log(' path drag end');
   }
-  this.object.drag(onCircleDrag, onCircleDragStart, onCircleDragEnd);
+  this.object.drag(onDrag, onDragStart, onDragStart);
 }
-

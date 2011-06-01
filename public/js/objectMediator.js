@@ -1,6 +1,6 @@
 // 以下の仲介役
 ObjectMediator = function() {};
-ObjectMediator.prototype.setUp           = function() {};
+ObjectMediator.prototype.setUp             = function() {};
 ObjectMediator.prototype.onObjectDragStart = function(id){
     socket.send({'action': ACTION_TYPE.REQUEST_LOCK, 'id': id})
 };
@@ -10,7 +10,7 @@ ObjectMediator.prototype.onObjectDragEnd = function(id, attr){
                  "attr"  : attr});
 };
 
-ObjectMediator.prototype.setUp  = function() {
+ObjectMediator.prototype.setUp = function() {
    var collection = new ObjectCollection();
        socket     = new io.Socket('motoki.local',{port:8000}),
        raphael    = Raphael(document.getElementById('svg_campus'), 500, 500);
@@ -18,15 +18,24 @@ ObjectMediator.prototype.setUp  = function() {
      socket.connect();
      socket.on('message', function(msg)
      {
-       switch (msg.action) {
-         case ACTION_TYPE.CREATE:
+
+       if (msg.action == ACTION_TYPE.CREATE) {
            createObject(msg.id, msg.type);
-           break;
+           return;
+       }
+
+       var obj = collection.find(msg.id);
+
+       switch (msg.action) {
          case ACTION_TYPE.LOCK:
-           updateObject(msg.id, {'status':OBJECT_STATUS.LOCK});
+           obj.setStatus(OBJECT_STATUS.LOCK);
            break;
          case ACTION_TYPE.EDIT:
-           updateObject(msg.id, {'status':OBJECT_STATUS.NONE, 'attr':msg.attr});
+           obj.setStatus(OBJECT_STATUS.NONE);
+           // typeによって処理？
+           // attrって渡し方がよくない気がする。pathとかattrとかいろいろあるし
+           // 何がある？
+           obj.object.animate(msg.attr, 300);
            break;
        }
      });
@@ -36,7 +45,6 @@ ObjectMediator.prototype.setUp  = function() {
            "type"  :$('#object_type').val()});
          });
 
-// mediator.crateObject(id, type)
 var createObject = function (id, type)
 {
     var objectName;
@@ -51,19 +59,7 @@ var createObject = function (id, type)
         throw('unknown type ' + type);
         break;
     }
-    collection.add(ObjectMaker.factory(objectName, raphael, id, mediator)); 
+    collection.add(ObjectMaker.factory(objectName, raphael, id, mediator));
 };
-
-// mediator.updateObject(id, type)
-var updateObject = function(id, param)
-{
-    var obj = collection.find(id);
-    if (param.status != '') {
-        obj.setStatus(param.status);
-    }
-    if (typeof param.attr == 'object'){
-        obj.object.animate(param.attr, 300);
-    }
-}
 };
 
