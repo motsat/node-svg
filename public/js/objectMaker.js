@@ -52,7 +52,7 @@ ObjectMaker.Circle = function (raphael){
       this.attr({opacity:'0.4'});
       this.mediator.onObjectDragStart(this.id);
     };
-  var onDrag = function(x, y){
+    var onDrag = function(x, y){
     if (this.parent.isLocked()) {
       return;
     }
@@ -77,50 +77,35 @@ ObjectMaker.Circle = function (raphael){
 
 ObjectMaker.Path = function (raphael){
   this.type = OBJECT_TYPE.PATH;
-  this.object = raphael.path("M00 00 L50 100")
+  this.object = raphael.path("M 00 00 L 50 100")      // M =MoveTo L=LineTo C=CurveTO A=ArcTo
       .attr({"stroke":"darkred", "stroke-width":2});
 
-      //raphael.path("M00 00 L50 100")
-      //.attr({"stroke":"darkblue", "stroke-width":2})
-      //.translate(0, 10); // x, y
-// M=始点、L=終点？
   var onDragStart = function(event){
     if (this.parent.isLocked()) {
       return;
     }
+    var opath = this.attr().path;
 
-    // this.ox = this.attr("cx");
-    // this.oy = this.attr("cy");
-    //   this.attr();
-    //   fill: "none"
-    //   path: Array[2]
-    //   0: Array[3]
-    //   1: Array[3]
-    //   length: 2
-    //   toString: function () {
-    //   __proto__: Array[0]
-    //   stroke: "darkred"
-    //   stroke-width: 2
-
-    this.opath = this.attr().path;
-
+    this.ox = 0;
+    this.oy = 0;
 
     this.attr({opacity:'0.4'});
     this.mediator.onObjectDragStart(this.id);
   }
   var onDrag = function(x, y){
     var opath = this.opath;
-
-    // path[0][1] = opath[0][1] + x,
-    // path[0][2] = opath[0][2] + y;
-    // path[1][1] = opath[1][1] + x;
-    // path[1][2] = opath[1][2] + y;
-    //console.log(x,y);
-    //console.log(this.translate(_x, _y));
-    log(' path drag');
+    this.translate(x - this.ox, y-this.oy);
+    this.ox = x;
+    this.oy = y;
   }
   var onDragEnd = function(event){
-    log(' path drag end');
+    if (this.parent.isLocked()) {
+      return;
+    }
+
+    var attr = {path : this.attr().path};
+    this.mediator.onObjectDragEnd(this.id, attr);
+    this.attr({opacity:'1.0'});
   }
-  this.object.drag(onDrag, onDragStart, onDragStart);
+  this.object.drag(onDrag, onDragStart, onDragEnd);
 }

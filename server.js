@@ -50,7 +50,6 @@ function onDisconnect(client)
 
 function onMessage(msg, client)
 {
-  console.log(msg);
   /* サーバ側のオブジェクトのstatus、attrかえる処理未実装 */
   switch (msg.action) {
   case ACTION_TYPE.REQUEST_CREATE:

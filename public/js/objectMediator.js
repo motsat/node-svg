@@ -35,7 +35,15 @@ ObjectMediator.prototype.setUp = function() {
            // typeによって処理？
            // attrって渡し方がよくない気がする。pathとかattrとかいろいろあるし
            // 何がある？
-           obj.object.animate(msg.attr, 300);
+           switch (obj.type){
+           case OBJECT_TYPE.CIRCLE:
+             obj.object.animate(msg.attr, 300);
+             break;
+           case OBJECT_TYPE.PATH:
+             //obj.object.attr({path:pathToString(msg.attr.path)});
+             obj.object.animate({path:pathToString(msg.attr.path)},300);
+            break;
+           }
            break;
        }
      });
